@@ -1,0 +1,8 @@
+label {
+  display: block;
+}
+
+.set__selected {
+  background-color: red;
+  color: white;
+}

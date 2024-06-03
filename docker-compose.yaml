@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    volumes:
+      - ".:/go/app"
+    ports:
+      - "5000:5000"
+    tty: true
+    environment:
+      - GOPATH=/go  # set GOPATH environment variable (optional)
+    command: /bin/bash

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Title of the document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/assets/styles.css">
+  </head>
+  <body>
+    <div x-data="Logger.data()">
+      <form @submit.prevent="onSubmit">
+        <label>
+          <h3>Weight</h3>
+          <input type="number" id="weight" x-model="weight" step=".1">
+          <button type="button" @click="increaseWeight()">+</button>
+          <button type="button" @click="decreaseWeight()">-</button>
+        </label>
+        <label>
+          <h3>Reps</h3>
+          <input type="number" id="reps" x-model="reps">
+          <button type="button" @click="increaseReps()">+</button>
+          <button type="button" @click="decreaseReps()">-</button>
+        </label>
+        <template x-if="selectedSet">
+          <div>
+            <button type="button" @click="update()">Update</button>
+            <button type="button" @click="deleteSet()">Delete</button>
+          </div>
+        </template>
+        <template x-if="!selectedSet">
+          <div>
+            <button type="submit">Save!</button>
+            <button type="button" @click="clear()">Clear</button>
+          </div>
+        </template>
+      </form>
+
+      <ul>
+        <template x-for="(set, index) in sets" :key="index">
+          <li
+            :class="{'set__selected': selectedSet === set}"
+            x-text="`weight: ${set.weight}, reps: ${set.reps}`"
+            @click="selectSet(set)"></li>
+        </template>
+      </ul>
+    </div>
+
+    <script src="assets/logger.js" type="text/javascript"></script>
+  </body>
+</html>

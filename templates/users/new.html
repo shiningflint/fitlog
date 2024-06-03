@@ -1,0 +1,12 @@
+<form id="newForm" hx-post="/admin/users" hx-target="#appendNewUser" hx-swap="outerHTML">
+  <label>
+    Name<br/>
+    <input type="text" name="name" />
+  </label>
+  <label>
+    Email<br/>
+    <input type="text" name="email" />
+  </label>
+  <button type="submit">Register New User</button>
+  <button type="button" hx-get="/admin/users/cancel" hx-target="#appendNewUser" hx-swap="outerHTML">Cancel</button>
+</form>

@@ -146,6 +146,26 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 }
 
+func deleteUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	userID := r.PathValue("id")
+
+	stmt, err := db.Prepare("DELETE FROM users WHERE id = ?")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error preparing statement: %v", err)
+		return
+	}
+	defer stmt.Close() // Close prepared statement on exit
+
+	// Execute insert statement
+	_, err = stmt.Exec(userID) // Replace with hashedPassword if implemented
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error deleting user: %v", err)
+		return
+	}
+}
+
 func serveStatic() {
 	// Define the static directory
 	assetsDir := http.Dir("assets")
@@ -229,14 +249,18 @@ func main() {
 		defer db.Close() // Close the connection when done
 
 		updateUser(w, r, db)
-		// userID := r.PathValue("id")
-		// var user User
+	})
 
-		// err = db.QueryRow("SELECT id, name, email FROM users WHERE id = ?", userID).Scan(&user.ID, &user.Name, &user.Email)
-		// if err != nil {
-		// 	panic(err)
-		// }
+	mux.HandleFunc("DELETE /admin/users/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// Open the database connection
+		db, err := sql.Open("sqlite3", "app.db")
+		if err != nil {
+			panic(err)
+		}
 
+		defer db.Close() // Close the connection when done
+
+		deleteUser(w, r, db)
 	})
 
 	http.ListenAndServe(":5000", mux)

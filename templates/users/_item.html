@@ -4,5 +4,6 @@
   <td>{{.Email}}</td>
   <td>
     <button hx-get="/admin/users/{{.ID}}/edit" hx-target="#userItem_{{.ID}}" type="button">Edit</button>
+    <button hx-delete="/admin/users/{{.ID}}" hx-target="#userItem_{{.ID}}" type="button">Delete</button>
   </td>
 </tr>

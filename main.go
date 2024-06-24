@@ -178,6 +178,12 @@ func serveStatic() {
 }
 
 func main() {
+	// Open the database connection
+	db, err := sql.Open("sqlite3", "app.db")
+	if err != nil {
+		panic(err)
+	}
+
 	serveStatic()
 
 	// New feature from go 1.22, using NewServeMux will enable you to do URL patterns such as: "/path/{id}/edit"
@@ -187,14 +193,6 @@ func main() {
 	})
 
 	mux.HandleFunc("/admin/users", func(w http.ResponseWriter, r *http.Request) {
-		// Open the database connection
-		db, err := sql.Open("sqlite3", "app.db")
-		if err != nil {
-			panic(err)
-		}
-
-		defer db.Close() // Close the connection when done
-
 		if r.Method == http.MethodPost {
 			createUser(w, r, db)
 		} else {
@@ -212,14 +210,6 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /admin/users/{id}/edit", func(w http.ResponseWriter, r *http.Request) {
-		// Open the database connection
-		db, err := sql.Open("sqlite3", "app.db")
-		if err != nil {
-			panic(err)
-		}
-
-		defer db.Close() // Close the connection when done
-
 		userID := r.PathValue("id")
 		var user User
 
@@ -240,26 +230,10 @@ func main() {
 	})
 
 	mux.HandleFunc("PATCH /admin/users/{id}", func(w http.ResponseWriter, r *http.Request) {
-		// Open the database connection
-		db, err := sql.Open("sqlite3", "app.db")
-		if err != nil {
-			panic(err)
-		}
-
-		defer db.Close() // Close the connection when done
-
 		updateUser(w, r, db)
 	})
 
 	mux.HandleFunc("DELETE /admin/users/{id}", func(w http.ResponseWriter, r *http.Request) {
-		// Open the database connection
-		db, err := sql.Open("sqlite3", "app.db")
-		if err != nil {
-			panic(err)
-		}
-
-		defer db.Close() // Close the connection when done
-
 		deleteUser(w, r, db)
 	})
 

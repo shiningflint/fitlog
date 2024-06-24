@@ -98,9 +98,24 @@ For complex services with async workers and such, we'll just add more directorie
 
 Hope that helps.
 
+## Go test
+run `go test`
+The test files has to match the main package
+`main.go main_test.go`
+
 ## Avoiding SQL Injection
 https://go.dev/doc/database/sql-injection
 https://stackoverflow.com/questions/26345318/how-can-i-prevent-sql-injection-attacks-in-go-while-using-database-sql
 
 ## New CSS
 https://mxb.dev/blog/old-dogs-new-css-tricks/
+
+## CSRF Solutions
+CSRF Cheat Sheet
+https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+Gorilla CSRF - It is said it works with built-in net/http
+https://github.com/gorilla/csrf
+
+## Web Auth Sessions Solutions
+https://github.com/gorilla/sessions

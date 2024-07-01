@@ -1,20 +1,18 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
 func TestAdminUsersIndex(t *testing.T) {
-	db, err := sql.Open("sqlite3", "app_test.db")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close() // Close the connection when done
+	os.Setenv("APP_ENV", "testing")
+
+	db = GetConnection()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -36,7 +34,7 @@ func TestAdminUsersIndex(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/admin/users", nil)
 	w := httptest.NewRecorder()
-	usersIndexHandler(w, req, db)
+	usersIndexHandler(w, req)
 	res := w.Result()
 
 	// Load the HTML document
@@ -70,4 +68,27 @@ func TestAdminUsersIndex(t *testing.T) {
 	default:
 		dx.Rollback()
 	}
+}
+
+func TestMe(t *testing.T) {
+	// db = GetConnection()
+
+	req := httptest.NewRequest(http.MethodGet, "/me", nil)
+	w := httptest.NewRecorder()
+
+	meHandler(w, req)
+	res := w.Result()
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	title := doc.Find("html")
+
+	titleHtml, err := title.Html()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(titleHtml)
 }

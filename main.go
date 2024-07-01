@@ -6,7 +6,33 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"html/template"
 	"net/http"
+	"os"
 )
+
+var db *sql.DB
+
+func GetConnection() *sql.DB {
+	if db != nil {
+		return db
+	}
+
+	var dbName string
+
+	if os.Getenv("APP_ENV") == "testing" {
+		dbName = "app_test.db"
+	} else {
+		dbName = "app.db"
+	}
+
+	db, err := sql.Open("sqlite3", dbName)
+	if err != nil {
+		fmt.Printf("🔥 failed to connect to the database: %s", err.Error())
+	}
+
+	fmt.Println("🚀 Connected Successfully to the Database")
+
+	return db
+}
 
 // Users struct to hold retrieved data
 type User struct {
@@ -15,7 +41,9 @@ type User struct {
 	Email string `json:"email"`
 }
 
-func getUsers(db *sql.DB) ([]User, error) {
+func usersIndexHandler(w http.ResponseWriter, r *http.Request) {
+	db = GetConnection()
+
 	// Define the SQL query
 	rows, err := db.Query("SELECT id, name, email FROM users ORDER BY created_at DESC")
 	if err != nil {
@@ -42,15 +70,6 @@ func getUsers(db *sql.DB) ([]User, error) {
 		panic(err)
 	}
 
-	return users, nil
-}
-
-func usersIndexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	users, err := getUsers(db)
-	if err != nil {
-		panic(err)
-	}
-
 	tmpl := template.Must(template.ParseFiles("templates/users/index.html", "templates/users/_newButton.html", "templates/users/_item.html"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -63,7 +82,9 @@ func usersIndexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 // Handler function for POST requests on /admin/users
-func createUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+func usersCreateHandler(w http.ResponseWriter, r *http.Request) {
+	db = GetConnection()
+
 	err := r.ParseForm()
 	if err != nil {
 		panic(err)
@@ -104,7 +125,31 @@ func createUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 }
 
-func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+func usersEditHanlder(w http.ResponseWriter, r *http.Request) {
+	db = GetConnection()
+
+	userID := r.PathValue("id")
+	var user User
+
+	err := db.QueryRow("SELECT id, name, email FROM users WHERE id = ?", userID).Scan(&user.ID, &user.Name, &user.Email)
+	if err != nil {
+		panic(err)
+	}
+
+	tmpl := template.Must(template.ParseFiles("templates/users/edit.html"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = tmpl.ExecuteTemplate(w, "edit.html", user); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func usersUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	db = GetConnection()
+
 	err := r.ParseForm()
 	if err != nil {
 		panic(err)
@@ -146,7 +191,9 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+func usersDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	db = GetConnection()
+
 	userID := r.PathValue("id")
 
 	stmt, err := db.Prepare("DELETE FROM users WHERE id = ?")
@@ -166,6 +213,18 @@ func deleteUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 }
 
+func meHandler(w http.ResponseWriter, r *http.Request) {
+	// db = GetConnection()
+
+	data := struct{}{} // empty data for now
+
+	tmpl := template.Must(template.ParseFiles("templates/me/index.html"))
+
+	if err := tmpl.ExecuteTemplate(w, "index.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func serveStatic() {
 	// Define the static directory
 	assetsDir := http.Dir("assets")
@@ -178,11 +237,7 @@ func serveStatic() {
 }
 
 func main() {
-	// Open the database connection
-	db, err := sql.Open("sqlite3", "app.db")
-	if err != nil {
-		panic(err)
-	}
+	os.Setenv("APP_ENV", "production")
 
 	serveStatic()
 
@@ -191,51 +246,18 @@ func main() {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "templates/index.html")
 	})
-
-	mux.HandleFunc("/admin/users", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			createUser(w, r, db)
-		} else {
-			usersIndexHandler(w, r, db)
-		}
-
-	})
-
+	mux.HandleFunc("GET /admin/users", usersIndexHandler)
+	mux.HandleFunc("POST /admin/users", usersCreateHandler)
 	mux.HandleFunc("GET /admin/users/new", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "templates/users/new.html")
 	})
-
 	mux.HandleFunc("GET /admin/users/cancel", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "templates/users/_newButton.html")
 	})
-
-	mux.HandleFunc("GET /admin/users/{id}/edit", func(w http.ResponseWriter, r *http.Request) {
-		userID := r.PathValue("id")
-		var user User
-
-		err = db.QueryRow("SELECT id, name, email FROM users WHERE id = ?", userID).Scan(&user.ID, &user.Name, &user.Email)
-		if err != nil {
-			panic(err)
-		}
-
-		tmpl := template.Must(template.ParseFiles("templates/users/edit.html"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if err := tmpl.ExecuteTemplate(w, "edit.html", user); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	})
-
-	mux.HandleFunc("PATCH /admin/users/{id}", func(w http.ResponseWriter, r *http.Request) {
-		updateUser(w, r, db)
-	})
-
-	mux.HandleFunc("DELETE /admin/users/{id}", func(w http.ResponseWriter, r *http.Request) {
-		deleteUser(w, r, db)
-	})
+	mux.HandleFunc("GET /admin/users/{id}/edit", usersEditHanlder)
+	mux.HandleFunc("PATCH /admin/users/{id}", usersUpdateHandler)
+	mux.HandleFunc("DELETE /admin/users/{id}", usersDeleteHandler)
+	mux.HandleFunc("GET /me", meHandler)
 
 	http.ListenAndServe(":5000", mux)
 }

@@ -2,6 +2,9 @@
 The simplest type with go htmx and bootstrap
 https://github.com/danielmeint/go-htmx-tasklist
 
+This one is quite a good one, handlers and models are tidy
+https://github.com/emarifer/go-htmx-demo
+
 This one uses a small framework: leapkit
 I think this one is more organized. I will keep an eye for the foldering organization
 https://github.com/paganotoni/todox
@@ -119,3 +122,41 @@ https://github.com/gorilla/csrf
 
 ## Web Auth Sessions Solutions
 https://github.com/gorilla/sessions
+
+Login logout example using cookie store:
+https://github.com/CurtisVermeeren/gorilla-sessions-tutorial/blob/master/CookiestoreSession/main.go
+
+Nice implementation example in this repo
+https://github.com/maxbarbieri/go-sqlite-sessions
+```go
+http.HandleFunc("/protected-area", verifyLogin(protectedAreaHandler))
+
+//login check middleware
+func verifyLogin(nextHandler func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+  return func(resWriter http.ResponseWriter, request *http.Request) {
+    //get session info
+    session, err := gosqlitesessions.GetSession(resWriter, request)
+      if err != nil {
+        sendHttpInternalServerError(resWriter, "An error occurred while getting session information: "+err.Error())
+          return
+      }
+
+    //if not logged in
+    if auth, ok := session.Values["loggedIn"].(bool); !ok || !auth {
+      sendUnauthorizedHttpError(resWriter) //send Unauthorized error
+        return
+    }
+
+    //if logged in
+
+    //save session to update expire date (both server-side session and cookie)
+    if err := session.Save(request, resWriter); err != nil {
+      sendHttpInternalServerError(resWriter, "An error occurred while saving session information: "+err.Error())
+        return
+    }
+
+    //pass the request to the next handler
+    nextHandler(resWriter, request)
+  }
+}
+```
